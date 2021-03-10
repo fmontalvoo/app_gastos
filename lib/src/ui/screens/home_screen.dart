@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import 'package:app_gastos/src/widgets/graph_widget.dart';
+import 'package:app_gastos/src/ui/widgets/month_expenses.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -12,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   PageController _pageController;
   int currentPage = 9;
+  Stream<QuerySnapshot> _stream;
 
   @override
   void initState() {
@@ -19,6 +22,12 @@ class _HomeScreenState extends State<HomeScreen> {
       initialPage: 9,
       viewportFraction: 0.4,
     );
+
+    _stream = FirebaseFirestore.instance
+        .collection('expenses')
+        .where('month', isEqualTo: currentPage + 1)
+        .snapshots();
+
     super.initState();
   }
 
@@ -40,13 +49,14 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           _selector(),
-          _expenses(),
-          _graph(),
-          Container(
-            color: Colors.blueAccent.withOpacity(0.15),
-            height: 24.0,
+          StreamBuilder<QuerySnapshot>(
+            stream: _stream,
+            builder: (context, snapshot) {
+              if (snapshot.hasData)
+                return MonthExpenses(docs: snapshot.data.docs);
+              return Center(child: CircularProgressIndicator());
+            },
           ),
-          _list(),
         ],
       ),
     );
@@ -59,6 +69,10 @@ class _HomeScreenState extends State<HomeScreen> {
         onPageChanged: (index) {
           setState(() {
             currentPage = index;
+            _stream = FirebaseFirestore.instance
+                .collection('expenses')
+                .where('month', isEqualTo: currentPage + 1)
+                .snapshots();
           });
         },
         controller: _pageController,
@@ -102,69 +116,6 @@ class _HomeScreenState extends State<HomeScreen> {
           name,
           style: (index == currentPage) ? selected : unselected,
         ));
-  }
-
-  Widget _expenses() {
-    return Column(
-      children: [
-        Text(
-          "\$1234.56",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 40.0),
-        ),
-        Text(
-          "Total expenses",
-          style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16.0,
-              color: Colors.blueGrey),
-        ),
-      ],
-    );
-  }
-
-  Widget _graph() {
-    return Container(
-      height: 250.0,
-      child: GraphWidget(),
-    );
-  }
-
-  Widget _list() {
-    return Expanded(
-      child: ListView.separated(
-        itemCount: 2,
-        itemBuilder: (context, index) =>
-            _item(FontAwesomeIcons.shoppingCart, "Shopping", 14, 145.12),
-        separatorBuilder: (context, index) => Container(
-          color: Colors.blueAccent.withOpacity(0.15),
-          height: 8.0,
-        ),
-      ),
-    );
-  }
-
-  Widget _item(IconData icon, String title, int percent, double price) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(
-        title,
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20.0),
-      ),
-      subtitle: Text("$percent% of expense",
-          style: TextStyle(fontSize: 16.0, color: Colors.blueGrey)),
-      trailing: Container(
-          padding: EdgeInsets.all(8.0),
-          decoration: BoxDecoration(
-              color: Colors.blueAccent.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(5.0)),
-          child: Text(
-            "\$$price",
-            style: TextStyle(
-                color: Colors.blueAccent,
-                fontWeight: FontWeight.bold,
-                fontSize: 18.0),
-          )),
-    );
   }
 
   Widget _bottomAppBar() {
