@@ -38,8 +38,11 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: _bottomAppBar(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
+        heroTag: "add",
         child: Icon(Icons.add),
-        onPressed: () {},
+        onPressed: () {
+          Navigator.pushNamed(context, '/add');
+        },
       ),
     );
   }

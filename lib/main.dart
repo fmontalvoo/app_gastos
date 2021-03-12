@@ -1,7 +1,9 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+
 import 'package:app_gastos/src/ui/screens/home_screen.dart';
+import 'package:app_gastos/src/ui/screens/add_expense_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,16 +40,9 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final error = Container(
-      color: Colors.white,
-      alignment: Alignment.center,
-      child: Text('Error', style: TextStyle(color: Colors.red)),
-    );
+    if (_error) return _container('Error', Colors.red);
 
-    final loading = Container(
-        color: Colors.white,
-        alignment: Alignment.center,
-        child: Text('Loading...', style: TextStyle(color: Colors.blue)));
+    if (!_initialized) return _container('Loading...', Colors.blue);
 
     return MaterialApp(
       title: 'App Gastos',
@@ -55,11 +50,21 @@ class _MyAppState extends State<MyApp> {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: _error
-          ? error
-          : !_initialized
-              ? loading
-              : HomeScreen(),
+      routes: {
+        '/': (context) => HomeScreen(),
+        '/add': (context) => AddExpensePage(),
+      },
+    );
+  }
+
+  Widget _container(String title, Color color) {
+    return Container(
+      color: Colors.white,
+      width: double.infinity,
+      height: double.infinity,
+      alignment: Alignment.center,
+      child: Text(title,
+          style: TextStyle(color: color), textDirection: TextDirection.ltr),
     );
   }
 }
