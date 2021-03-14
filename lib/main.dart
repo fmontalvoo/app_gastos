@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'package:app_gastos/src/ui/screens/home_screen.dart';
+import 'package:app_gastos/src/ui/screens/login_screen.dart';
 import 'package:app_gastos/src/ui/screens/add_expense_page.dart';
+
+import 'package:app_gastos/src/utils/login_state.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,16 +48,22 @@ class _MyAppState extends State<MyApp> {
 
     if (!_initialized) return _container('Loading...', Colors.blue);
 
-    return MaterialApp(
-      title: 'App Gastos',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+    return ChangeNotifierProvider(
+      create: (context) => LoginState(),
+      child: MaterialApp(
+        title: 'App Gastos',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+        ),
+        routes: {
+          '/': (context) {
+            var state = Provider.of<LoginState>(context);
+            return state.isLoggedIn ? HomeScreen() : LoginScreen();
+          },
+          '/add': (context) => AddExpensePage(),
+        },
       ),
-      routes: {
-        '/': (context) => HomeScreen(),
-        '/add': (context) => AddExpensePage(),
-      },
     );
   }
 

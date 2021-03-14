@@ -11,10 +11,10 @@ class MonthExpenses extends StatefulWidget {
   final List<double> perDay;
   final Map<String, double> categories;
 
-  MonthExpenses({Key key, this.docs})
+  MonthExpenses({Key key, int days, this.docs})
       : total = docs.map((doc) => doc['value']).fold(0.0, (a, b) => a + b),
         perDay = List.generate(
-            30,
+            days,
             (index) => docs
                 .where((doc) => doc['day'] == index + 1)
                 .map((doc) => doc['value'])
@@ -105,7 +105,7 @@ class _MonthExpensesState extends State<MonthExpenses> {
               color: Colors.blueAccent.withOpacity(0.2),
               borderRadius: BorderRadius.circular(5.0)),
           child: Text(
-            "\$$price",
+            "\$${price.toStringAsFixed(2)}",
             style: TextStyle(
                 color: Colors.blueAccent,
                 fontWeight: FontWeight.bold,

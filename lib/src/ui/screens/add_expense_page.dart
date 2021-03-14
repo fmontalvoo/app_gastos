@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:app_gastos/src/ui/widgets/category_selection.dart';
+
+import 'package:app_gastos/src/utils/login_state.dart';
 
 class AddExpensePage extends StatefulWidget {
   @override
@@ -135,13 +138,18 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     style: TextStyle(color: Colors.white, fontSize: 20.0),
                   ),
                   onPressed: () {
+                    // var user = Provider.of<LoginState>(context, listen: false)
+                    //     .currentUser;
+                    var user = context.read<LoginState>().currentUser;
                     if (_value > 0 && _category != "") {
                       FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user.uid)
                           .collection('expenses')
                           .doc()
                           .set({
                         "category": _category,
-                        "value": _value,
+                        "value": _value / 100,
                         "month": DateTime.now().month,
                         "day": DateTime.now().day
                       });

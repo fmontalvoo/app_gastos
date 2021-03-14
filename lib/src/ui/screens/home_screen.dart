@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:app_gastos/src/ui/widgets/month_expenses.dart';
+
+import 'package:app_gastos/src/utils/utlis.dart';
+import 'package:app_gastos/src/utils/login_state.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -13,37 +16,47 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   PageController _pageController;
-  int currentPage = 9;
+  int currentPage = DateTime.now().month - 1;
   Stream<QuerySnapshot> _stream;
 
   @override
   void initState() {
     _pageController = PageController(
-      initialPage: 9,
+      initialPage: currentPage,
       viewportFraction: 0.4,
     );
-
-    _stream = FirebaseFirestore.instance
-        .collection('expenses')
-        .where('month', isEqualTo: currentPage + 1)
-        .snapshots();
 
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _body(),
-      bottomNavigationBar: _bottomAppBar(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        heroTag: "add",
-        child: Icon(Icons.add),
-        onPressed: () {
-          Navigator.pushNamed(context, '/add');
-        },
-      ),
+    return Consumer<LoginState>(
+      builder: (context, loginState, child) {
+        // var user =
+        //     Provider.of<LoginState>(context, listen: false).currentUser;
+        var user = context.read<LoginState>().currentUser;
+        _stream = FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('expenses')
+            .where('month', isEqualTo: currentPage + 1)
+            .snapshots();
+
+        return Scaffold(
+          body: _body(),
+          bottomNavigationBar: _bottomAppBar(),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
+          floatingActionButton: FloatingActionButton(
+            heroTag: "add",
+            child: Icon(Icons.add),
+            onPressed: () {
+              Navigator.pushNamed(context, '/add');
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -56,7 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
             stream: _stream,
             builder: (context, snapshot) {
               if (snapshot.hasData)
-                return MonthExpenses(docs: snapshot.data.docs);
+                return MonthExpenses(
+                    days: daysInMonth(currentPage + 1),
+                    docs: snapshot.data.docs);
               return Center(child: CircularProgressIndicator());
             },
           ),
@@ -71,8 +86,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: PageView(
         onPageChanged: (index) {
           setState(() {
+            // var user =
+            //     Provider.of<LoginState>(context, listen: false).currentUser;
+            var user = context.read<LoginState>().currentUser;
             currentPage = index;
             _stream = FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
                 .collection('expenses')
                 .where('month', isEqualTo: currentPage + 1)
                 .snapshots();

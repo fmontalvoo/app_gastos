@@ -14,7 +14,7 @@ class CategorySelection extends StatefulWidget {
 }
 
 class _CategorySelectionState extends State<CategorySelection> {
-  String _currentItem = "Shopping";
+  String _currentItem = "";
   @override
   Widget build(BuildContext context) {
     var widgets = <Widget>[];
