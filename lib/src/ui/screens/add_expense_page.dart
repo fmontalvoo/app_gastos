@@ -9,39 +9,82 @@ import 'package:app_gastos/src/ui/widgets/category_selection.dart';
 import 'package:app_gastos/src/utils/login_state.dart';
 
 class AddExpensePage extends StatefulWidget {
+  final Rect buttonRect;
+
+  const AddExpensePage({Key key, this.buttonRect}) : super(key: key);
   @override
   _AddExpensePageState createState() => _AddExpensePageState();
 }
 
-class _AddExpensePageState extends State<AddExpensePage> {
-  String _category = "";
+class _AddExpensePageState extends State<AddExpensePage>
+    with SingleTickerProviderStateMixin {
+  AnimationController _controller;
+  Animation _buttonAnimation;
+  Animation _screenAnimation;
+
+  String _category;
   int _value = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    this._controller =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 750));
+
+    this._buttonAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: this._controller, curve: Curves.fastOutSlowIn));
+
+    this._screenAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: this._controller, curve: Curves.fastOutSlowIn));
+
+    this._controller.addListener(() {
+      print(_controller.value);
+      setState(() {});
+    });
+
+    this._controller.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed) Navigator.pop(context);
+    });
+
+    this._controller.forward();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: false,
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0.0,
-        title: Text('Category', style: TextStyle(color: Colors.grey)),
-        actions: [
-          IconButton(
-              icon: Icon(Icons.close, color: Colors.grey),
-              onPressed: () => Navigator.pop(context))
-        ],
-      ),
-      body: _body(),
+    var h = MediaQuery.of(context).size.height;
+    return Stack(
+      children: [
+        Transform.translate(
+          offset: Offset(0.0, h * (1 - this._screenAnimation.value)),
+          child: Scaffold(
+            appBar: AppBar(
+              centerTitle: false,
+              automaticallyImplyLeading: false,
+              backgroundColor: Colors.transparent,
+              elevation: 0.0,
+              title: Text('Category', style: TextStyle(color: Colors.grey)),
+              actions: [
+                IconButton(
+                    icon: Icon(Icons.close, color: Colors.grey),
+                    onPressed: () => this._controller.reverse())
+              ],
+            ),
+            body: _body(),
+          ),
+        ),
+        _submit(),
+      ],
     );
   }
 
   Widget _body() {
+    var h = MediaQuery.of(context).size.height;
     return Column(
       children: [
         _categorySelector(),
         _currentValue(),
         _numpad(),
-        _submit(),
+        SizedBox(height: h - widget.buttonRect.top),
       ],
     );
   }
@@ -59,7 +102,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
   }
 
   Widget _currentValue() {
-    var realValue = _value / 100.0;
+    var realValue = this._value / 100.0;
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 32.0),
       child: Text(
@@ -111,7 +154,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     )),
                 onTap: () {
                   setState(() {
-                    _value = _value ~/ 10;
+                    this._value = this._value ~/ 10;
                   });
                 },
               ),
@@ -123,46 +166,65 @@ class _AddExpensePageState extends State<AddExpensePage> {
   }
 
   Widget _submit() {
-    return Builder(
-        builder: (context) => Hero(
-              tag: "add",
-              child: Container(
-                height: 70.0,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.blueAccent,
-                ),
-                child: MaterialButton(
-                  child: Text(
-                    "Add expense",
-                    style: TextStyle(color: Colors.white, fontSize: 20.0),
+    if (this._controller.value < 1) {
+      var buttonWidth = widget.buttonRect.right - widget.buttonRect.left;
+      var size = MediaQuery.of(context).size;
+      return Positioned(
+        top: widget.buttonRect.top,
+        left: widget.buttonRect.left * (1 - this._buttonAnimation.value),
+        right: (size.width - widget.buttonRect.right) *
+            (1 - this._buttonAnimation.value),
+        bottom: (size.height - widget.buttonRect.bottom) *
+            (1 - this._buttonAnimation.value),
+        child: Container(
+          decoration: BoxDecoration(
+              color: Colors.blueAccent,
+              borderRadius: BorderRadius.circular(
+                  buttonWidth * (1 - this._buttonAnimation.value))),
+        ),
+      );
+    } else
+      return Builder(
+          builder: (context) => Positioned(
+                top: widget.buttonRect.top,
+                left: 0.0,
+                bottom: 0.0,
+                right: 0.0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent,
                   ),
-                  onPressed: () {
-                    // var user = Provider.of<LoginState>(context, listen: false)
-                    //     .currentUser;
-                    var user = context.read<LoginState>().currentUser;
-                    if (_value > 0 && _category != "") {
-                      FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user.uid)
-                          .collection('expenses')
-                          .doc()
-                          .set({
-                        "category": _category,
-                        "value": _value / 100,
-                        "month": DateTime.now().month,
-                        "day": DateTime.now().day
-                      });
-                      Navigator.pop(context);
-                    } else {
-                      Scaffold.of(context).showSnackBar(SnackBar(
-                          content: Text(
-                              "Ingresa un valor y selecciona una categoria")));
-                    }
-                  },
+                  child: MaterialButton(
+                    child: Text(
+                      "Add expense",
+                      style: TextStyle(color: Colors.white, fontSize: 20.0),
+                    ),
+                    onPressed: () {
+                      // var user = Provider.of<LoginState>(context, listen: false)
+                      //     .currentUser;
+                      var user = context.read<LoginState>().currentUser;
+                      if (this._value > 0 && this._category != "") {
+                        FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(user.uid)
+                            .collection('expenses')
+                            .doc()
+                            .set({
+                          "category": this._category,
+                          "value": this._value / 100,
+                          "month": DateTime.now().month,
+                          "day": DateTime.now().day
+                        });
+                        this._controller.reverse();
+                      } else {
+                        Scaffold.of(context).showSnackBar(SnackBar(
+                            content: Text(
+                                "Ingresa un valor y selecciona una categoria")));
+                      }
+                    },
+                  ),
                 ),
-              ),
-            ));
+              ));
   }
 
   Widget _button({String text, double height}) => InkWell(
@@ -177,9 +239,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
         onTap: () {
           setState(() {
             if (text == '.')
-              _value = _value * 100;
+              this._value = this._value * 100;
             else
-              _value = _value * 10 + int.parse(text);
+              this._value = this._value * 10 + int.parse(text);
           });
         },
       );

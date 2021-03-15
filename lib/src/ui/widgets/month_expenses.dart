@@ -1,3 +1,4 @@
+import 'package:app_gastos/src/ui/screens/details_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -5,13 +6,17 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:app_gastos/src/ui/widgets/graph_widget.dart';
 
+enum GraphType { LINES, PIE }
+
 class MonthExpenses extends StatefulWidget {
+  final GraphType graphType;
   final List<DocumentSnapshot> docs;
   final double total;
   final List<double> perDay;
   final Map<String, double> categories;
+  final int month;
 
-  MonthExpenses({Key key, int days, this.docs})
+  MonthExpenses({Key key, int days, this.docs, this.graphType, this.month})
       : total = docs.map((doc) => doc['value']).fold(0.0, (a, b) => a + b),
         perDay = List.generate(
             days,
@@ -65,10 +70,14 @@ class _MonthExpensesState extends State<MonthExpenses> {
   }
 
   Widget _graph() {
-    return Container(
-      height: 250.0,
-      child: GraphWidget(data: widget.perDay),
-    );
+    if (widget.graphType == GraphType.LINES)
+      return Container(
+          height: 250.0, child: LinesGraphWidget(data: widget.perDay));
+
+    var perCategory = widget.categories.keys
+        .map((name) => widget.categories[name] / widget.total)
+        .toList();
+    return Container(height: 250.0, child: PieGraphWidget(data: perCategory));
   }
 
   Widget _list() {
@@ -111,6 +120,10 @@ class _MonthExpensesState extends State<MonthExpenses> {
                 fontWeight: FontWeight.bold,
                 fontSize: 18.0),
           )),
+      onTap: () {
+        Navigator.pushNamed(context, '/details',
+            arguments: DetailsParams(categoryName: title, month: widget.month));
+      },
     );
   }
 }

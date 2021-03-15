@@ -1,6 +1,9 @@
+import 'package:app_gastos/src/ui/screens/add_expense_page.dart';
+import 'package:app_gastos/src/utils/add_expense_transition.dart';
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
+import 'package:rect_getter/rect_getter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -15,9 +18,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  var globalKey = RectGetter.createGlobalKey();
+  Rect buttonRect;
+
   PageController _pageController;
   int currentPage = DateTime.now().month - 1;
   Stream<QuerySnapshot> _stream;
+  GraphType _currentType = GraphType.LINES;
 
   @override
   void initState() {
@@ -48,13 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
           bottomNavigationBar: _bottomAppBar(),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,
-          floatingActionButton: FloatingActionButton(
-            heroTag: "add",
-            child: Icon(Icons.add),
-            onPressed: () {
-              Navigator.pushNamed(context, '/add');
-            },
-          ),
+          floatingActionButton: _floatingActionButton(context),
         );
       },
     );
@@ -70,12 +71,32 @@ class _HomeScreenState extends State<HomeScreen> {
             builder: (context, snapshot) {
               if (snapshot.hasData)
                 return MonthExpenses(
+                    graphType: this._currentType,
                     days: daysInMonth(currentPage + 1),
+                    month: (currentPage + 1),
                     docs: snapshot.data.docs);
               return Center(child: CircularProgressIndicator());
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _floatingActionButton(BuildContext context) {
+    return RectGetter(
+      key: globalKey,
+      child: FloatingActionButton(
+        heroTag: "add",
+        child: Icon(Icons.add),
+        onPressed: () {
+          buttonRect = RectGetter.getRectFromKey(globalKey);
+          var screen = AddExpenseTransition(
+              background: widget,
+              screen: AddExpensePage(buttonRect: buttonRect));
+          // Navigator.of(context).push(screen);
+          Navigator.push(context, screen);
+        },
       ),
     );
   }
@@ -149,22 +170,30 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _bottomButton(FontAwesomeIcons.history),
-            _bottomButton(FontAwesomeIcons.chartPie),
+            _bottomButton(FontAwesomeIcons.chartLine, () {
+              setState(() {
+                this._currentType = GraphType.LINES;
+              });
+            }),
+            _bottomButton(FontAwesomeIcons.chartPie, () {
+              setState(() {
+                this._currentType = GraphType.PIE;
+              });
+            }),
             SizedBox(width: 48.0),
-            _bottomButton(FontAwesomeIcons.wallet),
-            _bottomButton(Icons.settings),
+            _bottomButton(FontAwesomeIcons.wallet, () {}),
+            _bottomButton(Icons.settings, () {}),
           ],
         ));
   }
 
-  Widget _bottomButton(IconData icon) {
+  Widget _bottomButton(IconData icon, void Function() onTap) {
     return InkWell(
       child: Padding(
         padding: EdgeInsets.all(7.0),
         child: Icon(icon),
       ),
-      onTap: () {},
+      onTap: onTap,
     );
   }
 }

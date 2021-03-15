@@ -5,7 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'package:app_gastos/src/ui/screens/home_screen.dart';
 import 'package:app_gastos/src/ui/screens/login_screen.dart';
-import 'package:app_gastos/src/ui/screens/add_expense_page.dart';
+import 'package:app_gastos/src/ui/screens/details_screen.dart';
 
 import 'package:app_gastos/src/utils/login_state.dart';
 
@@ -38,8 +38,8 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    initializeFlutterFire();
     super.initState();
+    initializeFlutterFire();
   }
 
   @override
@@ -56,12 +56,20 @@ class _MyAppState extends State<MyApp> {
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
+        onGenerateRoute: (settings) {
+          if (settings.name == '/details') {
+            DetailsParams params = settings.arguments;
+            return MaterialPageRoute(
+              builder: (context) => DetailsScreen(params: params),
+            );
+          }
+          return null;
+        },
         routes: {
           '/': (context) {
             var state = Provider.of<LoginState>(context);
             return state.isLoggedIn ? HomeScreen() : LoginScreen();
           },
-          '/add': (context) => AddExpensePage(),
         },
       ),
     );
